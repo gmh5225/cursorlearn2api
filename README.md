@@ -10,6 +10,11 @@ Demonstrates:
 - Streaming and non-streaming responses
 - Making LLM APIs accessible to everyone
 
+## Limitations
+
+- File and image uploads not supported
+- Tool calling (function calling) not supported
+
 ## Requirements
 
 - Node.js >= 16.0.0
