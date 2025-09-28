@@ -593,6 +593,18 @@ app.get("/v1/models", (_req, res) => {
 				created: Math.floor(Date.now() / 1000),
 				owned_by: "cursor",
 			},
+			{
+				id: "google/gemini-2.5-pro",
+				object: "model",
+				created: Math.floor(Date.now() / 1000),
+				owned_by: "cursor",
+			},
+			{
+				id: "xai/grok-4",
+				object: "model",
+				created: Math.floor(Date.now() / 1000),
+				owned_by: "cursor",
+			},
 		],
 	});
 });
