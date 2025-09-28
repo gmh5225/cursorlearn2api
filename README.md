@@ -4,9 +4,8 @@ OpenAI-compatible API service for Cursor AI models using Playwright automation. 
 
 <img width="829" height="390" alt="image" src="https://github.com/user-attachments/assets/1e3a64fb-81e9-4818-817e-4f441fdcea02" />
 
-## Purpose
+## Features
 
-Demonstrates:
 - OpenAI API compatibility implementation
 - Web automation with Playwright
 - Streaming and non-streaming responses
