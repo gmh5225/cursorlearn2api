@@ -15,7 +15,7 @@ Demonstrates:
 ## Limitations
 
 - File and image uploads not supported
-- Tool calling (function calling) not supported
+- Tool calling (function calling) not supported (TODO)
 
 ## Requirements
 
