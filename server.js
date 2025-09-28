@@ -13,31 +13,96 @@ class CursorOpenAIService {
 		this.page = null;
 		this.isInitialized = false;
 
-		// Successful x-is-human variants
-		this.xIsHumanVariants = [
-			{
-				name: "Test Data 1",
-				data: {
-					b: 0,
-					v: 0.002496485486692848,
-					e: "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..M8k9E7yHXWkQuVcm.U1W5ovCj_TO3CismFpgq06pvMhNgciB51LnTEhxqQQ7KHmomgbpVfCKcxjUj9q_xR3LUbCf4BMZzYompqCBp3Q1NFZV7TRpzZhZtiQGwbrYW9NGfMCYNb-X1ovwoppDiODfoUjw81nTcXR-pLxgkbwleTq09MrcoDI5mfb3BFu64sdhc1TB6XUDPrhUYzdnyCG3aUDO1XGmA2GJnKPJYnbFX-hfueCmbnrM6L7bFyXbkwDLCGXLoJ6S5DYKKCzWzW_dXIqnK7HQDdxtTEmldioNIT_IFJHgFyD0dtEzRWiRrR9eO9X77jmWK6JSp7uBZLS_KHJKSBQuqFEQwBaqKj_OhDo9ZJ0f3TtL6Xmqw_G4Xh-t2ZNYjbBxDYmBacULmjuDw_iYQ4zrMdYSmUWmY6HsZ4UGprdb4_snCs2vXxHCqjUtubVPk0JvkjRDEebTlPZaYkLmkOJnYIYt24RUGri3p7xs_b7Q3BhslNX4K8T4mhWq0fjfVvVEcdFmus69mBDPvR8rGMvjxmEAJ4g.SJCIYOMw2IlVQXvwC2Vn1w",
-					s: "/HYcZdBjAGYOc9Wv44z0jhMutFLwvFimD2XnU/MbJD1WTsUFi71E+fDYaCyiVQwz76uGUsnb7QLXUwWbWjMFY9+Fbej0j4SVqxo8B8ecVZll7RoYJ9GkPPPPV7l2mgXDfkdb+REhq81432gyy6/T5C585FjbSXFXPPe/DifxCQ3EIO636lOWEDRSb6mPXuXRc9qtQF3jezM6sbljI+GaqM4E4KEAC9TlcGSdTJEl+tFaVxfngvckIiH/bPA5laXPs7jOgBqr3jvPnbYmZAaXswUPgCgqHJX5c7PfuTh+jUIvqw==",
-					d: 0,
-					vr: "3",
-				},
-			},
-			{
-				name: "Test Data 2",
-				data: {
-					b: 0,
-					v: Math.random() * 0.2,
-					e: "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..M8k9E7yHXWkQuVcm.U1W5ovCj_TO3CismFpgq06pvMhNgciB51LnTEhxqQQ7KHmomgbpVfCKcxjUj9q_xR3LUbCf4BMZzYompqCBp3Q1NFZV7TRpzZhZtiQGwbrYW9NGfMCYNb-X1ovwoppDiODfoUjw81nTcXR-pLxgkbwleTq09MrcoDI5mfb3BFu64sdhc1TB6XUDPrhUYzdnyCG3aUDO1XGmA2GJnKPJYnbFX-hfueCmbnrM6L7bFyXbkwDLCGXLoJ6S5DYKKCzWzW_dXIqnK7HQDdxtTEmldioNIT_IFJHgFyD0dtEzRWiRrR9eO9X77jmWK6JSp7uBZLS_KHJKSBQuqFEQwBaqKj_OhDo9ZJ0f3TtL6Xmqw_G4Xh-t2ZNYjbBxDYmBacULmjuDw_iYQ4zrMdYSmUWmY6HsZ4UGprdb4_snCs2vXxHCqjUtubVPk0JvkjRDEebTlPZaYkLmkOJnYIYt24RUGri3p7xs_b7Q3BhslNX4K8T4mhWq0fjfVvVEcdFmus69mBDPvR8rGMvjxmEAJ4g.SJCIYOMw2IlVQXvwC2Vn1w",
-					s: "/HYcZdBjAGYOc9Wv44z0jhMutFLwvFimD2XnU/MbJD1WTsUFi71E+fDYaCyiVQwz76uGUsnb7QLXUwWbWjMFY9+Fbej0j4SVqxo8B8ecVZll7RoYJ9GkPPPPV7l2mgXDfkdb+REhq81432gyy6/T5C585FjbSXFXPPe/DifxCQ3EIO636lOWEDRSb6mPXuXRc9qtQF3jezM6sbljI+GaqM4E4KEAC9TlcGSdTJEl+tFaVxfngvckIiH/bPA5laXPs7jOgBqr3jvPnbYmZAaXswUPgCgqHJX5c7PfuTh+jUIvqw==",
-					d: 0,
-					vr: "3",
-				},
-			},
-		];
+		// Dynamic x-is-human data
+		this.xIsHumanData = {
+			b: 0,
+			v: Math.random() * 0.2,
+			e: "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..M8k9E7yHXWkQuVcm.U1W5ovCj_TO3CismFpgq06pvMhNgciB51LnTEhxqQQ7KHmomgbpVfCKcxjUj9q_xR3LUbCf4BMZzYompqCBp3Q1NFZV7TRpzZhZtiQGwbrYW9NGfMCYNb-X1ovwoppDiODfoUjw81nTcXR-pLxgkbwleTq09MrcoDI5mfb3BFu64sdhc1TB6XUDPrhUYzdnyCG3aUDO1XGmA2GJnKPJYnbFX-hfueCmbnrM6L7bFyXbkwDLCGXLoJ6S5DYKKCzWzW_dXIqnK7HQDdxtTEmldioNIT_IFJHgFyD0dtEzRWiRrR9eO9X77jmWK6JSp7uBZLS_KHJKSBQuqFEQwBaqKj_OhDo9ZJ0f3TtL6Xmqw_G4Xh-t2ZNYjbBxDYmBacULmjuDw_iYQ4zrMdYSmUWmY6HsZ4UGprdb4_snCs2vXxHCqjUtubVPk0JvkjRDEebTlPZaYkLmkOJnYIYt24RUGri3p7xs_b7Q3BhslNX4K8T4mhWq0fjfVvVEcdFmus69mBDPvR8rGMvjxmEAJ4g.SJCIYOMw2IlVQXvwC2Vn1w",
+			s: "/HYcZdBjAGYOc9Wv44z0jhMutFLwvFimD2XnU/MbJD1WTsUFi71E+fDYaCyiVQwz76uGUsnb7QLXUwWbWjMFY9+Fbej0j4SVqxo8B8ecVZll7RoYJ9GkPPPPV7l2mgXDfkdb+REhq81432gyy6/T5C585FjbSXFXPPe/DifxCQ3EIO636lOWEDRSb6mPXuXRc9qtQF3jezM6sbljI+GaqM4E4KEAC9TlcGSdTJEl+tFaVxfngvckIiH/bPA5laXPs7jOgBqr3jvPnbYmZAaXswUPgCgqHJX5c7PfuTh+jUIvqw==",
+			d: 0,
+			vr: "3",
+		};
+
+		// Dynamic e value fetch configuration
+		this.dynamicEConfig = {
+			url: "https://cursor.com/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/a-4-a/c.js?i=1&v=3&h=cursor.com",
+			lastFetch: 0,
+			refreshInterval: 2 * 60 * 1000, // Refresh every 2 minutes
+			latestE: null
+		};
+	}
+
+	// Update e value in x-is-human data
+	async updateXIsHumanE() {
+		const latestE = await this.fetchLatestE();
+		if (latestE) {
+			this.xIsHumanData.e = latestE;
+			// Also update v value for increased randomness
+			this.xIsHumanData.v = Math.random() * 0.2;
+			return true;
+		}
+		return false;
+	}
+
+	// Fetch latest e value from Cursor's JS file
+	async fetchLatestE() {
+		try {
+			const now = Date.now();
+			// Check if refresh is needed
+			if (this.dynamicEConfig.latestE && (now - this.dynamicEConfig.lastFetch < this.dynamicEConfig.refreshInterval)) {
+				return this.dynamicEConfig.latestE;
+			}
+
+			if (!this.page) {
+				return null;
+			}
+
+			// Use browser page to fetch JS file content
+			const jsContent = await this.page.evaluate(async (url) => {
+				try {
+					const response = await fetch(url, {
+						method: 'GET',
+						headers: {
+							'Accept': 'text/javascript, application/javascript',
+							'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+						}
+					});
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}`);
+					}
+
+					return await response.text();
+				} catch (error) {
+					return { error: error.message };
+				}
+			}, this.dynamicEConfig.url);
+
+			if (jsContent && !jsContent.error) {
+				// Use regex to extract e value
+				// Match pattern: window.V_C.push( () => X(0, 0, number, "eyJ-starting string"
+				const eRegex = /window\.V_C\.push\s*\(\s*\(\s*\)\s*=>\s*X\s*\([^,]*,[^,]*,[^,]*,\s*"(eyJ[^"]+)"/g;
+				const matches = [];
+				let match;
+
+				while ((match = eRegex.exec(jsContent)) !== null) {
+					matches.push(match[1]);
+				}
+
+				if (matches.length > 0) {
+					// Take the latest e value (usually the last one)
+					const latestE = matches[matches.length - 1];
+					this.dynamicEConfig.latestE = latestE;
+					this.dynamicEConfig.lastFetch = now;
+					return latestE;
+				}
+			}
+
+			return null;
+		} catch (error) {
+			console.error("Failed to fetch latest e value:", error.message);
+			return null;
+		}
 	}
 
 	async initBrowser() {
@@ -101,55 +166,52 @@ class CursorOpenAIService {
 		const cursorMessages = this.convertOpenAIMessagesToCursor(messages);
 		const requestId = conversationId || `msg_${Date.now()}`;
 
-		// Try different x-is-human variants
-		for (const variant of this.xIsHumanVariants) {
-			try {
-				const result = await this.page.evaluate(
-					async (params) => {
-						try {
-							const response = await fetch("/api/chat", {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-									"x-is-human": JSON.stringify(params.xIsHuman),
-									"x-method": "POST",
-									"x-path": "/api/chat",
-								},
-								body: JSON.stringify({
-									context: [],
-									model: params.model,
-									id: params.requestId,
-									messages: params.cursorMessages,
-									trigger: "submit-message",
-								}),
-							});
+		try {
+			const result = await this.page.evaluate(
+				async (params) => {
+					try {
+						const response = await fetch("/api/chat", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								"x-is-human": JSON.stringify(params.xIsHuman),
+								"x-method": "POST",
+								"x-path": "/api/chat",
+							},
+							body: JSON.stringify({
+								context: [],
+								model: params.model,
+								id: params.requestId,
+								messages: params.cursorMessages,
+								trigger: "submit-message",
+							}),
+						});
 
-							return {
-								status: response.status,
-								text: await response.text(),
-								success: response.status === 200,
-							};
-						} catch (error) {
-							return { error: error.message };
-						}
-					},
-					{
-						xIsHuman: variant.data,
-						model: model,
-						cursorMessages: cursorMessages,
-						requestId: requestId,
-					},
-				);
+						return {
+							status: response.status,
+							text: await response.text(),
+							success: response.status === 200,
+						};
+					} catch (error) {
+						return { error: error.message };
+					}
+				},
+				{
+					xIsHuman: this.xIsHumanData,
+					model: model,
+					cursorMessages: cursorMessages,
+					requestId: requestId,
+				},
+			);
 
-				if (result.success) {
-					return this.parseCursorResponse(result.text);
-				}
-			} catch (error) {
-				console.log(`Variant ${variant.name} failed: ${error.message}`);
+			if (result.success) {
+				return this.parseCursorResponse(result.text);
+			} else {
+				throw new Error(`API call failed: ${result.error || result.status}`);
 			}
+		} catch (error) {
+			throw new Error(`API call exception: ${error.message}`);
 		}
-
-		throw new Error("All x-is-human variants failed");
 	}
 
 	// Extract plain text from message content, supporting complex formats
@@ -253,92 +315,84 @@ class CursorOpenAIService {
 		const cursorMessages = this.convertOpenAIMessagesToCursor(messages);
 		const requestId = conversationId || `msg_${Date.now()}`;
 
-		// Try different x-is-human variants
-		for (const variant of this.xIsHumanVariants) {
-			try {
-				// Initiate streaming request in page context
-				const response = await this.page.evaluate(
-					async (params) => {
-						const response = await fetch("/api/chat", {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-								Accept: "text/event-stream",
-								"x-is-human": JSON.stringify(params.xIsHuman),
-								"x-method": "POST",
-								"x-path": "/api/chat",
-							},
-							body: JSON.stringify({
-								context: [],
-								model: params.model,
-								id: params.requestId,
-								messages: params.cursorMessages,
-								trigger: "submit-message",
-							}),
-						});
+		// Initiate streaming request in page context
+		const response = await this.page.evaluate(
+			async (params) => {
+				const response = await fetch("/api/chat", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Accept: "text/event-stream",
+						"x-is-human": JSON.stringify(params.xIsHuman),
+						"x-method": "POST",
+						"x-path": "/api/chat",
+					},
+					body: JSON.stringify({
+						context: [],
+						model: params.model,
+						id: params.requestId,
+						messages: params.cursorMessages,
+						trigger: "submit-message",
+					}),
+				});
 
-						if (!response.ok) {
-							return { error: `HTTP ${response.status}` };
-						}
+				if (!response.ok) {
+					return { error: `HTTP ${response.status}` };
+				}
 
-						// Read streaming response
-						const reader = response.body.getReader();
-						const decoder = new TextDecoder();
-						let buffer = "";
-						const chunks = [];
+				// Read streaming response
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				let buffer = "";
+				const chunks = [];
 
-						try {
-							while (true) {
-								const { done, value } = await reader.read();
-								if (done) break;
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
 
-								buffer += decoder.decode(value, { stream: true });
-								const lines = buffer.split("\n");
-								buffer = lines.pop() || "";
+						buffer += decoder.decode(value, { stream: true });
+						const lines = buffer.split("\n");
+						buffer = lines.pop() || "";
 
-								for (const line of lines) {
-									const trimmedLine = line.trim();
-									if (trimmedLine.startsWith("data: ")) {
-										const dataStr = trimmedLine.slice(6);
-										if (dataStr === "[DONE]") {
-											return { success: true, chunks };
-										}
-										try {
-											const data = JSON.parse(dataStr);
-											if (data.type === "text-delta" && data.delta) {
-												chunks.push(data.delta);
-											}
-										} catch (e) {
-											// Ignore parsing errors
-										}
+						for (const line of lines) {
+							const trimmedLine = line.trim();
+							if (trimmedLine.startsWith("data: ")) {
+								const dataStr = trimmedLine.slice(6);
+								if (dataStr === "[DONE]") {
+									return { success: true, chunks };
+								}
+								try {
+									const data = JSON.parse(dataStr);
+									if (data.type === "text-delta" && data.delta) {
+										chunks.push(data.delta);
 									}
+								} catch (e) {
+									// Ignore parsing errors
 								}
 							}
-							return { success: true, chunks };
-						} finally {
-							reader.releaseLock();
 						}
-					},
-					{
-						xIsHuman: variant.data,
-						model: model,
-						cursorMessages: cursorMessages,
-						requestId: requestId,
-					},
-				);
-
-				if (response.success && response.chunks) {
-					for (const chunk of response.chunks) {
-						yield chunk;
 					}
-					return; 
+					return { success: true, chunks };
+				} finally {
+					reader.releaseLock();
 				}
-			} catch (error) {
-				console.log(`Streaming variant ${variant.name} failed: ${error.message}`);
-			}
-		}
+			},
+			{
+				xIsHuman: this.xIsHumanData,
+				model: model,
+				cursorMessages: cursorMessages,
+				requestId: requestId,
+			},
+		);
 
-		throw new Error("All streaming x-is-human variants failed");
+		if (response.success && response.chunks) {
+			for (const chunk of response.chunks) {
+				yield chunk;
+			}
+		} else {
+			throw new Error(`Streaming API call failed: ${response.error || "Unknown error"}`);
+		}
 	}
 
 	async cleanup() {
@@ -550,6 +604,14 @@ app.get("/health", (_req, res) => {
 		service: "cursorlearn2api",
 		timestamp: new Date().toISOString(),
 		initialized: cursorService.isInitialized,
+		xIsHumanData: {
+			currentE: cursorService.xIsHumanData.e ?
+				cursorService.xIsHumanData.e.substring(0, 30) + "..." : null,
+			currentV: cursorService.xIsHumanData.v,
+			lastFetch: cursorService.dynamicEConfig.lastFetch,
+			url: cursorService.dynamicEConfig.url,
+			hasLatestE: !!cursorService.dynamicEConfig.latestE
+		}
 	});
 });
 
@@ -594,6 +656,14 @@ app.listen(PORT, async () => {
 	try {
 		await cursorService.initBrowser();
 		console.log("Browser pre-initialization completed");
+
+		// Test dynamic e value update
+		const updated = await cursorService.updateXIsHumanE();
+		if (updated) {
+			console.log("Successfully updated dynamic e value:", cursorService.xIsHumanData.e.substring(0, 50) + "...");
+		} else {
+			console.log("Could not fetch latest e value, using default");
+		}
 	} catch (error) {
 		console.error("Browser initialization failed:", error.message);
 	}
