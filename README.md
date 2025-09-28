@@ -39,7 +39,7 @@ Start the server:
 npm start
 ```
 
-Server runs on port 3001 by default. Set `PORT` environment variable to change.
+Server runs on port 30011 by default. Set `PORT` environment variable to change.
 
 ## API Endpoints
 
@@ -50,7 +50,7 @@ POST /v1/chat/completions
 
 Example:
 ```bash
-curl -X POST http://localhost:3001/v1/chat/completions \
+curl -X POST http://localhost:30011/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-4-sonnet",

@@ -579,7 +579,7 @@ app.use((error, _req, res, _next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 30011;
 
 app.listen(PORT, async () => {
 	console.log("CursorLearn2API - OpenAI-compatible Cursor API Service");
