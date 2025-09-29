@@ -588,7 +588,7 @@ app.get("/v1/models", (_req, res) => {
 		object: "list",
 		data: [
 			{
-				id: "anthropic/claude-4-sonnet",
+				id: "anthropic/claude-4.5-sonnet",
 				object: "model",
 				created: Math.floor(Date.now() / 1000),
 				owned_by: "cursor",
