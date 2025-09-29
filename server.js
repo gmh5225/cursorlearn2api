@@ -151,7 +151,7 @@ class CursorOpenAIService {
 		// Visit learning page to establish session
 		await this.page.goto("https://cursor.com/en-US/learn/how-ai-models-work", {
 			waitUntil: "networkidle",
-			timeout: 5000,
+			timeout: 30000,
 		});
 
 		this.isInitialized = true;
@@ -618,6 +618,18 @@ app.get("/v1/models", (_req, res) => {
 		data: [
 			{
 				id: "anthropic/claude-4.5-sonnet",
+				object: "model",
+				created: Math.floor(Date.now() / 1000),
+				owned_by: "cursor",
+			},
+			{
+				id: "anthropic/claude-4-sonnet",
+				object: "model",
+				created: Math.floor(Date.now() / 1000),
+				owned_by: "cursor",
+			},
+			{
+				id: "anthropic/claude-4.1-opus",
 				object: "model",
 				created: Math.floor(Date.now() / 1000),
 				owned_by: "cursor",
