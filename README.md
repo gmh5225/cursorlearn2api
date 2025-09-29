@@ -61,6 +61,8 @@ curl -X POST http://localhost:30011/v1/chat/completions \
 
 ## Available Models
 
+- `anthropic/claude-4-sonnet`
+- `anthropic/claude-4.1-opus`
 - `anthropic/claude-4.5-sonnet`
 - `openai/gpt-5`
 - `google/gemini-2.5-pro`
