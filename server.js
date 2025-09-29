@@ -28,7 +28,7 @@ class CursorOpenAIService {
 			url: "https://cursor.com/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/a-4-a/c.js?i=1&v=3&h=cursor.com",
 			lastFetch: 0,
 			refreshInterval: 4 * 60 * 60 * 1000, // Refresh every 4 hours
-			latestE: null
+			latestE: null,
 		};
 	}
 
@@ -49,7 +49,10 @@ class CursorOpenAIService {
 		try {
 			const now = Date.now();
 			// Check if refresh is needed
-			if (this.dynamicEConfig.latestE && (now - this.dynamicEConfig.lastFetch < this.dynamicEConfig.refreshInterval)) {
+			if (
+				this.dynamicEConfig.latestE &&
+				now - this.dynamicEConfig.lastFetch < this.dynamicEConfig.refreshInterval
+			) {
 				return this.dynamicEConfig.latestE;
 			}
 
@@ -61,11 +64,12 @@ class CursorOpenAIService {
 			const jsContent = await this.page.evaluate(async (url) => {
 				try {
 					const response = await fetch(url, {
-						method: 'GET',
+						method: "GET",
 						headers: {
-							'Accept': 'text/javascript, application/javascript',
-							'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
-						}
+							Accept: "text/javascript, application/javascript",
+							"User-Agent":
+								"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+						},
 					});
 
 					if (!response.ok) {
@@ -81,7 +85,8 @@ class CursorOpenAIService {
 			if (jsContent && !jsContent.error) {
 				// Use regex to extract e value
 				// Match pattern: window.V_C.push( () => X(0, 0, number, "eyJ-starting string"
-				const eRegex = /window\.V_C\.push\s*\(\s*\(\s*\)\s*=>\s*X\s*\([^,]*,[^,]*,[^,]*,\s*"(eyJ[^"]+)"/g;
+				const eRegex =
+					/window\.V_C\.push\s*\(\s*\(\s*\)\s*=>\s*X\s*\([^,]*,[^,]*,[^,]*,\s*"(eyJ[^"]+)"/g;
 				const matches = [];
 				let match;
 
@@ -153,11 +158,7 @@ class CursorOpenAIService {
 		console.log("Browser initialization completed");
 	}
 
-	async callCursorAPI(
-		messages,
-		model = "anthropic/claude-4.5-sonnet",
-		conversationId = null,
-	) {
+	async callCursorAPI(messages, model = "anthropic/claude-4.5-sonnet", conversationId = null) {
 		if (!this.isInitialized) {
 			await this.initBrowser();
 		}
@@ -305,11 +306,7 @@ class CursorOpenAIService {
 	}
 
 	// Stream call to Cursor API
-	async *streamCursorAPI(
-		messages,
-		model = "anthropic/claude-4.5-sonnet",
-		conversationId = null,
-	) {
+	async *streamCursorAPI(messages, model = "anthropic/claude-4.5-sonnet", conversationId = null) {
 		if (!this.isInitialized) {
 			await this.initBrowser();
 		}
@@ -321,67 +318,102 @@ class CursorOpenAIService {
 		const cursorMessages = this.convertOpenAIMessagesToCursor(messages);
 		const requestId = conversationId || `msg_${Date.now()}`;
 
-		// Initiate streaming request in page context
-		const response = await this.page.evaluate(
+		// Create a unique stream ID for this request
+		const streamId = `stream_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+		// Buffer to collect streaming data
+		const streamBuffer = [];
+		let streamComplete = false;
+		let streamError = null;
+
+		// Expose function to receive chunks from browser (synchronous callback)
+		await this.page.exposeFunction(`streamChunk_${streamId}`, (chunk) => {
+			if (chunk === null) {
+				streamComplete = true;
+			} else if (chunk.error) {
+				streamError = new Error(chunk.error);
+				streamComplete = true;
+			} else {
+				streamBuffer.push(chunk);
+			}
+		});
+
+		// Initiate the fetch request in browser context with optimized streaming
+		const fetchPromise = this.page.evaluate(
 			async (params) => {
-				const response = await fetch("/api/chat", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Accept: "text/event-stream",
-						"x-is-human": JSON.stringify(params.xIsHuman),
-						"x-method": "POST",
-						"x-path": "/api/chat",
-					},
-					body: JSON.stringify({
-						context: [],
-						model: params.model,
-						id: params.requestId,
-						messages: params.cursorMessages,
-						trigger: "submit-message",
-					}),
-				});
-
-				if (!response.ok) {
-					return { error: `HTTP ${response.status}` };
-				}
-
-				// Read streaming response
-				const reader = response.body.getReader();
-				const decoder = new TextDecoder();
-				let buffer = "";
-				const chunks = [];
+				const sendChunk = window[`streamChunk_${params.streamId}`];
 
 				try {
-					while (true) {
-						const { done, value } = await reader.read();
-						if (done) break;
+					const response = await fetch("/api/chat", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "text/event-stream",
+							"x-is-human": JSON.stringify(params.xIsHuman),
+							"x-method": "POST",
+							"x-path": "/api/chat",
+						},
+						body: JSON.stringify({
+							context: [],
+							model: params.model,
+							id: params.requestId,
+							messages: params.cursorMessages,
+							trigger: "submit-message",
+						}),
+					});
 
-						buffer += decoder.decode(value, { stream: true });
-						const lines = buffer.split("\n");
-						buffer = lines.pop() || "";
+					if (!response.ok) {
+						sendChunk({ error: `HTTP ${response.status}` });
+						return { error: `HTTP ${response.status}` };
+					}
 
-						for (const line of lines) {
-							const trimmedLine = line.trim();
-							if (trimmedLine.startsWith("data: ")) {
-								const dataStr = trimmedLine.slice(6);
-								if (dataStr === "[DONE]") {
-									return { success: true, chunks };
-								}
-								try {
-									const data = JSON.parse(dataStr);
-									if (data.type === "text-delta" && data.delta) {
-										chunks.push(data.delta);
+					// Read streaming response with minimal buffering
+					const reader = response.body.getReader();
+					const decoder = new TextDecoder();
+					let buffer = "";
+
+					try {
+						while (true) {
+							const { done, value } = await reader.read();
+							if (done) break;
+
+							const text = decoder.decode(value, { stream: true });
+							buffer += text;
+
+							let newlineIndex;
+							while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+								const line = buffer.slice(0, newlineIndex);
+								buffer = buffer.slice(newlineIndex + 1);
+
+								const trimmedLine = line.trim();
+								if (trimmedLine.startsWith("data: ")) {
+									const dataStr = trimmedLine.slice(6);
+									if (dataStr === "[DONE]") {
+										sendChunk(null);
+										return { success: true };
 									}
-								} catch (e) {
-									// Ignore parsing errors
+									try {
+										const data = JSON.parse(dataStr);
+										if (data.type === "text-delta" && data.delta) {
+											// Send chunk immediately
+											sendChunk(data.delta);
+										}
+									} catch (e) {
+										// Ignore parsing errors
+									}
 								}
 							}
 						}
+
+						// Signal completion
+						sendChunk(null);
+						return { success: true };
+					} finally {
+						reader.releaseLock();
 					}
-					return { success: true, chunks };
-				} finally {
-					reader.releaseLock();
+				} catch (error) {
+					sendChunk({ error: error.message });
+					return { error: error.message };
 				}
 			},
 			{
@@ -389,15 +421,31 @@ class CursorOpenAIService {
 				model: model,
 				cursorMessages: cursorMessages,
 				requestId: requestId,
+				streamId: streamId,
 			},
 		);
 
-		if (response.success && response.chunks) {
-			for (const chunk of response.chunks) {
-				yield chunk;
+		let lastYieldedIndex = 0;
+		// Yield any new chunks that have arrived
+		while (!streamComplete) {
+			while (lastYieldedIndex < streamBuffer.length) {
+				yield streamBuffer[lastYieldedIndex];
+				lastYieldedIndex++;
 			}
-		} else {
-			throw new Error(`Streaming API call failed: ${response.error || "Unknown error"}`);
+			await new Promise((resolve) => setImmediate(resolve));
+		}
+
+		// Yield any remaining chunks
+		while (lastYieldedIndex < streamBuffer.length) {
+			yield streamBuffer[lastYieldedIndex];
+			lastYieldedIndex++;
+		}
+
+		// Wait for fetch to complete
+		await fetchPromise;
+
+		if (streamError) {
+			throw streamError;
 		}
 	}
 
@@ -426,11 +474,7 @@ app.use((req, _res, next) => {
 // OpenAI-compatible chat completion endpoint
 app.post("/v1/chat/completions", async (req, res) => {
 	try {
-		const {
-			model = "anthropic/claude-4.5-sonnet",
-			messages,
-			stream = false,
-		} = req.body;
+		const { model = "anthropic/claude-4.5-sonnet", messages, stream = false } = req.body;
 
 		if (!messages || !Array.isArray(messages) || messages.length === 0) {
 			return res.status(400).json({
@@ -460,11 +504,7 @@ app.post("/v1/chat/completions", async (req, res) => {
 			let fullContent = "";
 
 			try {
-				const streamGenerator = cursorService.streamCursorAPI(
-					messages,
-					model,
-					conversationId,
-				);
+				const streamGenerator = cursorService.streamCursorAPI(messages, model, conversationId);
 
 				for await (const chunk of streamGenerator) {
 					fullContent += chunk;
@@ -508,9 +548,7 @@ app.post("/v1/chat/completions", async (req, res) => {
 						),
 						completion_tokens: Math.ceil(fullContent.length / 4),
 						total_tokens: Math.ceil(
-							(messages.reduce((sum, msg) => sum + msg.content.length, 0) +
-								fullContent.length) /
-								4,
+							(messages.reduce((sum, msg) => sum + msg.content.length, 0) + fullContent.length) / 4,
 						),
 					},
 				};
@@ -533,11 +571,7 @@ app.post("/v1/chat/completions", async (req, res) => {
 			}
 		} else {
 			// Non-streaming response
-			const content = await cursorService.callCursorAPI(
-				messages,
-				model,
-				conversationId,
-			);
+			const content = await cursorService.callCursorAPI(messages, model, conversationId);
 
 			const response = {
 				id: `chatcmpl-${Date.now()}`,
@@ -555,15 +589,10 @@ app.post("/v1/chat/completions", async (req, res) => {
 					},
 				],
 				usage: {
-					prompt_tokens: messages.reduce(
-						(sum, msg) => sum + Math.ceil(msg.content.length / 4),
-						0,
-					),
+					prompt_tokens: messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0),
 					completion_tokens: Math.ceil(content.length / 4),
 					total_tokens: Math.ceil(
-						(messages.reduce((sum, msg) => sum + msg.content.length, 0) +
-							content.length) /
-							4,
+						(messages.reduce((sum, msg) => sum + msg.content.length, 0) + content.length) / 4,
 					),
 				},
 			};
@@ -623,13 +652,14 @@ app.get("/health", (_req, res) => {
 		timestamp: new Date().toISOString(),
 		initialized: cursorService.isInitialized,
 		xIsHumanData: {
-			currentE: cursorService.xIsHumanData.e ?
-				cursorService.xIsHumanData.e.substring(0, 30) + "..." : null,
+			currentE: cursorService.xIsHumanData.e
+				? cursorService.xIsHumanData.e.substring(0, 30) + "..."
+				: null,
 			currentV: cursorService.xIsHumanData.v,
 			lastFetch: cursorService.dynamicEConfig.lastFetch,
 			url: cursorService.dynamicEConfig.url,
-			hasLatestE: !!cursorService.dynamicEConfig.latestE
-		}
+			hasLatestE: !!cursorService.dynamicEConfig.latestE,
+		},
 	});
 });
 
@@ -678,7 +708,10 @@ app.listen(PORT, async () => {
 		// Test dynamic e value update
 		const updated = await cursorService.updateXIsHumanE();
 		if (updated) {
-			console.log("Successfully updated dynamic e value:", cursorService.xIsHumanData.e.substring(0, 50) + "...");
+			console.log(
+				"Successfully updated dynamic e value:",
+				cursorService.xIsHumanData.e.substring(0, 50) + "...",
+			);
 		} else {
 			console.log("Could not fetch latest e value, using default");
 		}
