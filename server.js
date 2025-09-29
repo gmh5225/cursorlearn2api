@@ -27,7 +27,7 @@ class CursorOpenAIService {
 		this.dynamicEConfig = {
 			url: "https://cursor.com/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/a-4-a/c.js?i=1&v=3&h=cursor.com",
 			lastFetch: 0,
-			refreshInterval: 60 * 60 * 1000, // Refresh every 60 minutes
+			refreshInterval: 4 * 60 * 60 * 1000, // Refresh every 4 hours
 			latestE: null
 		};
 	}
@@ -161,6 +161,9 @@ class CursorOpenAIService {
 		if (!this.isInitialized) {
 			await this.initBrowser();
 		}
+
+		// Update x-is-human data before API call
+		await this.updateXIsHumanE();
 
 		// Convert OpenAI format messages to Cursor format
 		const cursorMessages = this.convertOpenAIMessagesToCursor(messages);
@@ -310,6 +313,9 @@ class CursorOpenAIService {
 		if (!this.isInitialized) {
 			await this.initBrowser();
 		}
+
+		// Update x-is-human data before API call
+		await this.updateXIsHumanE();
 
 		// Convert OpenAI format messages to Cursor format
 		const cursorMessages = this.convertOpenAIMessagesToCursor(messages);
