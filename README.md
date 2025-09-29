@@ -61,10 +61,10 @@ curl -X POST http://localhost:30011/v1/chat/completions \
 
 ## Available Models
 
-- `xai/grok-4`
 - `anthropic/claude-4.5-sonnet`
 - `openai/gpt-5`
 - `google/gemini-2.5-pro`
+- `xai/grok-4`
 
 ## Development
 
