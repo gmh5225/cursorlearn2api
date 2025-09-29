@@ -155,7 +155,7 @@ class CursorOpenAIService {
 
 	async callCursorAPI(
 		messages,
-		model = "anthropic/claude-4-sonnet",
+		model = "anthropic/claude-4.5-sonnet",
 		conversationId = null,
 	) {
 		if (!this.isInitialized) {
@@ -307,7 +307,7 @@ class CursorOpenAIService {
 	// Stream call to Cursor API
 	async *streamCursorAPI(
 		messages,
-		model = "anthropic/claude-4-sonnet",
+		model = "anthropic/claude-4.5-sonnet",
 		conversationId = null,
 	) {
 		if (!this.isInitialized) {
@@ -427,7 +427,7 @@ app.use((req, _res, next) => {
 app.post("/v1/chat/completions", async (req, res) => {
 	try {
 		const {
-			model = "anthropic/claude-4-sonnet",
+			model = "anthropic/claude-4.5-sonnet",
 			messages,
 			stream = false,
 		} = req.body;
