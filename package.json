@@ -4,7 +4,7 @@
 	"description": "OpenAI-compatible Cursor API service using Playwright for web automation and learning purposes",
 	"main": "server.js",
 	"bin": {
-		"cursorlearn2api": "./server.js"
+		"cursorlearn2api": "server.js"
 	},
 	"scripts": {
 		"start": "node server.js",
@@ -36,7 +36,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/gmh5225/cursorlearn2api.git"
+		"url": "git+https://github.com/gmh5225/cursorlearn2api.git"
 	},
 	"bugs": {
 		"url": "https://github.com/gmh5225/cursorlearn2api/issues"
