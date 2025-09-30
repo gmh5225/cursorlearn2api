@@ -22,7 +22,25 @@ OpenAI-compatible API service for Cursor AI models using Playwright automation. 
 - npm or yarn
 - Chrome/Chromium browser
 
-## Installation
+## Quick Start
+
+### Option 1: Run with npx (Recommended)
+
+No installation needed! Just run:
+```bash
+npx cursorlearn2api
+```
+
+First run will automatically install dependencies and Playwright browser.
+
+### Option 2: Global Installation
+
+```bash
+npm install -g cursorlearn2api
+cursorlearn2api
+```
+
+### Option 3: Manual Installation
 
 Clone and install:
 ```bash
@@ -30,12 +48,6 @@ git clone https://github.com/gmh5225/cursorlearn2api.git
 cd cursorlearn2api
 npm install
 npx playwright install chromium
-```
-
-## Usage
-
-Start the server:
-```bash
 npm start
 ```
 
