@@ -55,7 +55,7 @@ curl -X POST http://localhost:30011/v1/chat/completions \
   -d '{
     "model": "anthropic/claude-4.5-sonnet",
     "messages": [{"role": "user", "content": "Hello"}],
-    "stream": false
+    "stream": true
   }'
 ```
 
