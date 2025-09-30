@@ -201,7 +201,8 @@ class CursorService {
 									}
 
 									// Parse JSON only if it looks like valid data
-									if (dataStr.charCodeAt(0) === 123) { // '{'
+									if (dataStr.charCodeAt(0) === 123) {
+										// '{'
 										try {
 											const data = JSON.parse(dataStr);
 											// Direct property access is faster than optional chaining
