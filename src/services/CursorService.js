@@ -97,7 +97,7 @@ class CursorService {
 
 		const page = this.browserService.getPage();
 
-		// Expose function to receive chunks from browser with immediate notification
+		// Expose function to receive chunks from browser with batching support
 		await page.exposeFunction(`streamChunk_${streamId}`, (chunk) => {
 			if (chunk === null) {
 				streamComplete = true;
@@ -112,7 +112,16 @@ class CursorService {
 					resolveWaiting();
 					resolveWaiting = null;
 				}
+			} else if (chunk.batch) {
+				// Batch of chunks - push all at once
+				streamBuffer.push(...chunk.batch);
+				// Immediately notify waiting generator
+				if (resolveWaiting) {
+					resolveWaiting();
+					resolveWaiting = null;
+				}
 			} else {
+				// Single chunk (fallback)
 				streamBuffer.push(chunk);
 				// Immediately notify waiting generator
 				if (resolveWaiting) {
@@ -126,6 +135,9 @@ class CursorService {
 		const fetchPromise = page.evaluate(
 			async (params) => {
 				const sendChunk = window[`streamChunk_${params.streamId}`];
+
+				// Declare variables in outer scope for error handling
+				let chunkBatch = [];
 
 				try {
 					const response = await fetch("/api/chat", {
@@ -151,7 +163,7 @@ class CursorService {
 						return { error: `HTTP ${response.status}` };
 					}
 
-					// Read streaming response with optimized parsing
+					// Read streaming response with batched chunk sending
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder();
 					let buffer = "";
@@ -179,6 +191,11 @@ class CursorService {
 
 									// Fast check for [DONE]
 									if (dataStr === "[DONE]") {
+										// Send any batched chunks first
+										if (chunkBatch.length > 0) {
+											sendChunk({ batch: chunkBatch });
+											chunkBatch = [];
+										}
 										sendChunk(null);
 										return { success: true };
 									}
@@ -189,7 +206,7 @@ class CursorService {
 											const data = JSON.parse(dataStr);
 											// Direct property access is faster than optional chaining
 											if (data.type === "text-delta" && data.delta) {
-												sendChunk(data.delta);
+												chunkBatch.push(data.delta);
 											}
 										} catch (e) {
 											// Ignore parsing errors
@@ -197,6 +214,17 @@ class CursorService {
 									}
 								}
 							}
+
+							// Send batch after processing each read() to maintain low latency
+							if (chunkBatch.length > 0) {
+								sendChunk({ batch: chunkBatch });
+								chunkBatch = [];
+							}
+						}
+
+						// Send any remaining chunks
+						if (chunkBatch.length > 0) {
+							sendChunk({ batch: chunkBatch });
 						}
 
 						// Signal completion
@@ -206,6 +234,10 @@ class CursorService {
 						reader.releaseLock();
 					}
 				} catch (error) {
+					// Send any remaining chunks before error
+					if (chunkBatch.length > 0) {
+						sendChunk({ batch: chunkBatch });
+					}
 					sendChunk({ error: error.message });
 					return { error: error.message };
 				}
