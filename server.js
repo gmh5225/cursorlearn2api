@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * CursorLearn2API - OpenAI-compatible Cursor API Service
  * Educational project using Playwright for web automation
