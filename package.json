@@ -1,6 +1,6 @@
 {
 	"name": "cursorlearn2api",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "OpenAI-compatible Cursor API service using Playwright for web automation and learning purposes",
 	"main": "server.js",
 	"bin": {
@@ -23,7 +23,15 @@
 	"engines": {
 		"node": ">=16.0.0"
 	},
-	"keywords": ["cursor", "api", "openai", "playwright", "automation", "ai", "chatgpt"],
+	"keywords": [
+		"cursor",
+		"api",
+		"openai",
+		"playwright",
+		"automation",
+		"ai",
+		"chatgpt"
+	],
 	"author": "gmh5225",
 	"license": "MIT",
 	"repository": {
