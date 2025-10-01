@@ -13,7 +13,7 @@ OpenAI-compatible API service for Cursor AI models using Playwright automation. 
 
 ## Limitations
 
-- File and image uploads not supported
+- Image recognition not supported
 - Tool calling (function calling) not supported (TODO)
 
 ## Requirements
