@@ -12,21 +12,15 @@ class CursorService {
 	}
 
 	async callAPI(messages, model = config.api.defaultModel, conversationId = null) {
-		// Ensure browser is initialized
-		if (!this.browserService.isInitialized) {
-			await this.browserService.init();
-		}
-
-		// Update x-is-human data before API call
+		await this.browserService.init();
 		await this.xIsHumanService.update();
 
-		// Convert OpenAI format messages to Cursor format
 		const cursorMessages = convertOpenAIMessagesToCursor(messages);
-		const requestId = conversationId || `msg_${Date.now()}`;
+		const requestId = conversationId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+		const contextWrapper = await this.browserService.acquireContext();
 
 		try {
-			const page = this.browserService.getPage();
-			const result = await page.evaluate(
+			const result = await contextWrapper.page.evaluate(
 				async (params) => {
 					try {
 						const response = await fetch("/api/chat", {
@@ -70,74 +64,60 @@ class CursorService {
 			}
 		} catch (error) {
 			throw new Error(`API call exception: ${error.message}`);
+		} finally {
+			await this.browserService.releaseContext(contextWrapper);
 		}
 	}
 
 	async *streamAPI(messages, model = config.api.defaultModel, conversationId = null) {
-		// Ensure browser is initialized
-		if (!this.browserService.isInitialized) {
-			await this.browserService.init();
-		}
-
-		// Update x-is-human data before API call
+		await this.browserService.init();
 		await this.xIsHumanService.update();
 
-		// Convert OpenAI format messages to Cursor format
 		const cursorMessages = convertOpenAIMessagesToCursor(messages);
-		const requestId = conversationId || `msg_${Date.now()}`;
-
-		// Create a unique stream ID for this request
+		const requestId = conversationId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		const streamId = `stream_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-		// Buffer to collect streaming data with event-driven notification
 		const streamBuffer = [];
 		let streamComplete = false;
 		let streamError = null;
 		let resolveWaiting = null;
 
-		const page = this.browserService.getPage();
+		const contextWrapper = await this.browserService.acquireContext();
 
-		// Expose function to receive chunks from browser with batching support
-		await page.exposeFunction(`streamChunk_${streamId}`, (chunk) => {
-			if (chunk === null) {
-				streamComplete = true;
-				if (resolveWaiting) {
-					resolveWaiting();
-					resolveWaiting = null;
+		try {
+			await contextWrapper.page.exposeFunction(`streamChunk_${streamId}`, (chunk) => {
+				if (chunk === null) {
+					streamComplete = true;
+					if (resolveWaiting) {
+						resolveWaiting();
+						resolveWaiting = null;
+					}
+				} else if (chunk.error) {
+					streamError = new Error(chunk.error);
+					streamComplete = true;
+					if (resolveWaiting) {
+						resolveWaiting();
+						resolveWaiting = null;
+					}
+				} else if (chunk.batch) {
+					streamBuffer.push(...chunk.batch);
+					if (resolveWaiting) {
+						resolveWaiting();
+						resolveWaiting = null;
+					}
+				} else {
+					streamBuffer.push(chunk);
+					if (resolveWaiting) {
+						resolveWaiting();
+						resolveWaiting = null;
+					}
 				}
-			} else if (chunk.error) {
-				streamError = new Error(chunk.error);
-				streamComplete = true;
-				if (resolveWaiting) {
-					resolveWaiting();
-					resolveWaiting = null;
-				}
-			} else if (chunk.batch) {
-				// Batch of chunks - push all at once
-				streamBuffer.push(...chunk.batch);
-				// Immediately notify waiting generator
-				if (resolveWaiting) {
-					resolveWaiting();
-					resolveWaiting = null;
-				}
-			} else {
-				// Single chunk (fallback)
-				streamBuffer.push(chunk);
-				// Immediately notify waiting generator
-				if (resolveWaiting) {
-					resolveWaiting();
-					resolveWaiting = null;
-				}
-			}
-		});
+			});
 
-		// Initiate the fetch request in browser context with optimized streaming
-		const fetchPromise = page.evaluate(
-			async (params) => {
-				const sendChunk = window[`streamChunk_${params.streamId}`];
-
-				// Declare variables in outer scope for error handling
-				let chunkBatch = [];
+			const fetchPromise = contextWrapper.page.evaluate(
+				async (params) => {
+					const sendChunk = window[`streamChunk_${params.streamId}`];
+					let chunkBatch = [];
 
 				try {
 					const response = await fetch("/api/chat", {
@@ -163,7 +143,6 @@ class CursorService {
 						return { error: `HTTP ${response.status}` };
 					}
 
-					// Read streaming response with batched chunk sending
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder();
 					let buffer = "";
@@ -173,25 +152,19 @@ class CursorService {
 							const { done, value } = await reader.read();
 							if (done) break;
 
-							// Decode chunk
 							buffer += decoder.decode(value, { stream: true });
 
-							// Process all complete lines in buffer
 							let newlineIndex;
 							while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
 								const line = buffer.substring(0, newlineIndex);
 								buffer = buffer.substring(newlineIndex + 1);
 
-								// Fast path: skip empty lines
 								if (line.length === 0 || line === "\r") continue;
 
-								// Check for data prefix (most common case)
 								if (line.charCodeAt(0) === 100 && line.startsWith("data: ")) {
 									const dataStr = line.substring(6);
 
-									// Fast check for [DONE]
 									if (dataStr === "[DONE]") {
-										// Send any batched chunks first
 										if (chunkBatch.length > 0) {
 											sendChunk({ batch: chunkBatch });
 											chunkBatch = [];
@@ -200,12 +173,9 @@ class CursorService {
 										return { success: true };
 									}
 
-									// Parse JSON only if it looks like valid data
 									if (dataStr.charCodeAt(0) === 123) {
-										// '{'
 										try {
 											const data = JSON.parse(dataStr);
-											// Direct property access is faster than optional chaining
 											if (data.type === "text-delta" && data.delta) {
 												chunkBatch.push(data.delta);
 											}
@@ -216,26 +186,22 @@ class CursorService {
 								}
 							}
 
-							// Send batch after processing each read() to maintain low latency
 							if (chunkBatch.length > 0) {
 								sendChunk({ batch: chunkBatch });
 								chunkBatch = [];
 							}
 						}
 
-						// Send any remaining chunks
 						if (chunkBatch.length > 0) {
 							sendChunk({ batch: chunkBatch });
 						}
 
-						// Signal completion
 						sendChunk(null);
 						return { success: true };
 					} finally {
 						reader.releaseLock();
 					}
 				} catch (error) {
-					// Send any remaining chunks before error
 					if (chunkBatch.length > 0) {
 						sendChunk({ batch: chunkBatch });
 					}
@@ -252,35 +218,33 @@ class CursorService {
 			},
 		);
 
-		let lastYieldedIndex = 0;
+			let lastYieldedIndex = 0;
 
-		// Event-driven chunk yielding with zero-delay notification
-		while (!streamComplete) {
-			// Yield all available chunks immediately
+			while (!streamComplete) {
+				while (lastYieldedIndex < streamBuffer.length) {
+					yield streamBuffer[lastYieldedIndex];
+					lastYieldedIndex++;
+				}
+
+				if (!streamComplete) {
+					await new Promise((resolve) => {
+						resolveWaiting = resolve;
+					});
+				}
+			}
+
 			while (lastYieldedIndex < streamBuffer.length) {
 				yield streamBuffer[lastYieldedIndex];
 				lastYieldedIndex++;
 			}
 
-			// If not complete, wait for next chunk notification
-			if (!streamComplete) {
-				await new Promise((resolve) => {
-					resolveWaiting = resolve;
-				});
+			await fetchPromise;
+
+			if (streamError) {
+				throw streamError;
 			}
-		}
-
-		// Yield any remaining chunks after completion
-		while (lastYieldedIndex < streamBuffer.length) {
-			yield streamBuffer[lastYieldedIndex];
-			lastYieldedIndex++;
-		}
-
-		// Wait for fetch to complete
-		await fetchPromise;
-
-		if (streamError) {
-			throw streamError;
+		} finally {
+			await this.browserService.releaseContext(contextWrapper);
 		}
 	}
 }

@@ -14,6 +14,7 @@ class HealthController {
 			service: "cursorlearn2api",
 			timestamp: new Date().toISOString(),
 			initialized: this.browserService.isInitialized,
+			concurrency: this.browserService.getStats(),
 			xIsHumanData: this.xIsHumanService.getStatus(),
 		});
 	}

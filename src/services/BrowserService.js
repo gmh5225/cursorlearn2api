@@ -8,28 +8,58 @@ const config = require("../config");
 class BrowserService {
 	constructor() {
 		this.browser = null;
-		this.page = null;
 		this.isInitialized = false;
+		this.initLock = null;
+		this.activeContexts = new Set();
+		this.totalCreated = 0;
 	}
 
 	async init() {
 		if (this.isInitialized) return;
 
-		console.log("Initializing Playwright browser...");
+		if (this.initLock) {
+			await this.initLock;
+			return;
+		}
 
-		this.browser = await chromium.launch({
-			headless: config.browser.headless,
-			args: config.browser.args,
+		let releaseInitLock;
+		this.initLock = new Promise((resolve) => {
+			releaseInitLock = resolve;
 		});
+
+		try {
+			if (this.isInitialized) {
+				return;
+			}
+
+			console.log("Initializing Playwright browser (unlimited concurrency mode)...");
+
+			this.browser = await chromium.launch({
+				headless: config.browser.headless,
+				args: config.browser.args,
+			});
+
+			this.isInitialized = true;
+			console.log("Browser initialization completed - unlimited concurrency enabled");
+		} finally {
+			releaseInitLock();
+			this.initLock = null;
+		}
+	}
+
+	async createContext() {
+		if (!this.isInitialized) {
+			await this.init();
+		}
 
 		const context = await this.browser.newContext({
 			userAgent: config.browser.userAgent,
 			viewport: config.browser.viewport,
 		});
 
-		this.page = await context.newPage();
+		const page = await context.newPage();
 
-		await this.page.addInitScript(() => {
+		await page.addInitScript(() => {
 			Object.defineProperty(navigator, "webdriver", { get: () => false });
 			delete window.domAutomation;
 			delete window.domAutomationController;
@@ -44,26 +74,72 @@ class BrowserService {
 			delete window._playwright;
 		});
 
-		// Visit learning page to establish session
-		await this.page.goto(config.browser.targetUrl, {
+		await page.goto(config.browser.targetUrl, {
 			waitUntil: "networkidle",
 			timeout: config.browser.timeout,
 		});
 
-		this.isInitialized = true;
-		console.log("Browser initialization completed");
+		const contextWrapper = {
+			context,
+			page,
+			id: `ctx_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+			createdAt: Date.now(),
+		};
+		this.activeContexts.add(contextWrapper);
+		this.totalCreated++;
+
+		return contextWrapper;
 	}
 
-	getPage() {
-		if (!this.isInitialized) {
-			throw new Error("Browser not initialized. Call init() first.");
+	async acquireContext() {
+		return await this.createContext();
+	}
+
+	async releaseContext(contextWrapper) {
+		this.activeContexts.delete(contextWrapper);
+		try {
+			await contextWrapper.page.close();
+			await contextWrapper.context.close();
+		} catch (error) {
+			console.error(`Error closing context ${contextWrapper.id}:`, error.message);
 		}
-		return this.page;
+	}
+
+	async destroyContext(contextWrapper) {
+		await this.releaseContext(contextWrapper);
+	}
+
+	getStats() {
+		return {
+			activeContexts: this.activeContexts.size,
+			totalCreated: this.totalCreated,
+			mode: "unlimited",
+		};
 	}
 
 	async cleanup() {
-		if (this.page) await this.page.close();
-		if (this.browser) await this.browser.close();
+		console.log(`Cleaning up ${this.activeContexts.size} active contexts...`);
+
+		const closePromises = [];
+		for (const contextWrapper of this.activeContexts) {
+			closePromises.push(
+				(async () => {
+					try {
+						await contextWrapper.page.close();
+						await contextWrapper.context.close();
+					} catch (error) {
+						console.error(`Error closing context ${contextWrapper.id}:`, error.message);
+					}
+				})(),
+			);
+		}
+
+		await Promise.all(closePromises);
+		this.activeContexts.clear();
+
+		if (this.browser) {
+			await this.browser.close();
+		}
 		this.isInitialized = false;
 		console.log("Browser cleaned up");
 	}

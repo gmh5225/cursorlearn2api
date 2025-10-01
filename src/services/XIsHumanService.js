@@ -10,76 +10,93 @@ class XIsHumanService {
 		this.data = { ...config.xIsHuman.defaultData };
 		this.lastFetch = 0;
 		this.latestE = null;
+		this.updateLock = null;
 	}
 
 	getData() {
-		return this.data;
+		return {
+			...this.data,
+			v: Math.random() * 0.2,
+		};
 	}
 
 	async update() {
-		const latestE = await this.fetchLatestE();
-		if (latestE) {
-			this.data.e = latestE;
-			// Also update v value for increased randomness
-			this.data.v = Math.random() * 0.2;
-			return true;
+		if (this.updateLock) {
+			await this.updateLock;
+			return !!this.data.e;
 		}
-		return false;
+
+		let releaseLock;
+		this.updateLock = new Promise((resolve) => {
+			releaseLock = resolve;
+		});
+
+		try {
+			const latestE = await this.fetchLatestE();
+			if (latestE) {
+				this.data.e = latestE;
+				return true;
+			}
+			return false;
+		} finally {
+			releaseLock();
+			this.updateLock = null;
+		}
 	}
 
 	async fetchLatestE() {
 		try {
 			const now = Date.now();
-			// Check if refresh is needed
 			if (this.latestE && now - this.lastFetch < config.xIsHuman.refreshInterval) {
 				return this.latestE;
 			}
 
-			const page = this.browserService.getPage();
+			const contextWrapper = await this.browserService.acquireContext();
 
-			// Use browser page to fetch JS file content
-			const jsContent = await page.evaluate(async (url) => {
-				try {
-					const response = await fetch(url, {
-						method: "GET",
-						headers: {
-							Accept: "text/javascript, application/javascript",
-							"User-Agent":
-								"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-						},
-					});
+			try {
+				const jsContent = await contextWrapper.page.evaluate(async (url) => {
+					try {
+						const response = await fetch(url, {
+							method: "GET",
+							headers: {
+								Accept: "text/javascript, application/javascript",
+								"User-Agent":
+									"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+							},
+						});
 
-					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}`);
+						if (!response.ok) {
+							throw new Error(`HTTP ${response.status}`);
+						}
+
+						return await response.text();
+					} catch (error) {
+						return { error: error.message };
+					}
+				}, config.xIsHuman.dynamicEUrl);
+
+				if (jsContent && !jsContent.error) {
+					const eRegex =
+						/window\.V_C\.push\s*\(\s*\(\s*\)\s*=>\s*X\s*\([^,]*,[^,]*,[^,]*,\s*"(eyJ[^"]+)"/g;
+					const matches = [];
+					let match;
+
+					while ((match = eRegex.exec(jsContent)) !== null) {
+						matches.push(match[1]);
 					}
 
-					return await response.text();
-				} catch (error) {
-					return { error: error.message };
-				}
-			}, config.xIsHuman.dynamicEUrl);
-
-			if (jsContent && !jsContent.error) {
-				// Use regex to extract e value
-				const eRegex =
-					/window\.V_C\.push\s*\(\s*\(\s*\)\s*=>\s*X\s*\([^,]*,[^,]*,[^,]*,\s*"(eyJ[^"]+)"/g;
-				const matches = [];
-				let match;
-
-				while ((match = eRegex.exec(jsContent)) !== null) {
-					matches.push(match[1]);
+					if (matches.length > 0) {
+						const latestE = matches[matches.length - 1];
+						this.latestE = latestE;
+						this.lastFetch = Date.now();
+						return latestE;
+					}
 				}
 
-				if (matches.length > 0) {
-					// Take the latest e value (usually the last one)
-					const latestE = matches[matches.length - 1];
-					this.latestE = latestE;
-					this.lastFetch = now;
-					return latestE;
-				}
+				return null;
+			} finally {
+				await this.browserService.releaseContext(contextWrapper);
 			}
-
-			return null;
 		} catch (error) {
 			console.error("Failed to fetch latest e value:", error.message);
 			return null;
