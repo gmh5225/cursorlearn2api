@@ -78,7 +78,13 @@ curl -X POST http://localhost:30011/v1/chat/completions \
 - `anthropic/claude-4.5-sonnet`
 - `openai/gpt-5`
 - `google/gemini-2.5-pro`
+- `google/gemini-2.5-flash`
 - `xai/grok-4`
+- `xai/grok-code-fast-1`
+- `moonshotai/kimi-k2-0905`
+- `alibaba/qwen3-coder`
+- `alibaba/qwen3-coder-plus`
+- `alibaba/qwen3-max`
 
 ## Development
 

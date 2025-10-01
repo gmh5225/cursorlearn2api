@@ -72,7 +72,37 @@ module.exports = {
 			owned_by: "cursor",
 		},
 		{
+			id: "google/gemini-2.5-flash",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
 			id: "xai/grok-4",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
+			id: "xai/grok-code-fast-1",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
+			id: "moonshotai/kimi-k2-0905",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
+			id: "alibaba/qwen3-coder",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
+			id: "alibaba/qwen3-coder-plus",
+			object: "model",
+			owned_by: "cursor",
+		},
+		{
+			id: "alibaba/qwen3-max",
 			object: "model",
 			owned_by: "cursor",
 		},
