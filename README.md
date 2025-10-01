@@ -51,7 +51,7 @@ npx playwright install chromium
 npm start
 ```
 
-Server runs on port 30011 by default. Set `PORT` environment variable to change.
+Server runs on port `30011` by default. Set `PORT` environment variable to change.
 
 ## API Endpoints
 
