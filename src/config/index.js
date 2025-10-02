@@ -111,5 +111,10 @@ module.exports = {
 			object: "model",
 			owned_by: "cursor",
 		},
+		{
+			id: "zai/glm-4.6",
+			object: "model",
+			owned_by: "cursor",
+		},
 	],
 };

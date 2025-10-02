@@ -93,6 +93,7 @@ curl -X POST http://localhost:30011/v1/chat/completions \
 - `alibaba/qwen3-coder`
 - `alibaba/qwen3-coder-plus`
 - `alibaba/qwen3-max`
+- `zai/glm-4.6`
 
 ## Development
 
