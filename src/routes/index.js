@@ -8,7 +8,9 @@ function setupRoutes(app, controllers) {
 	const { chatController, modelController, healthController } = controllers;
 
 	// Chat completion endpoint (protected by authentication)
-	app.post("/v1/chat/completions", auth, (req, res) => chatController.handleChatCompletion(req, res));
+	app.post("/v1/chat/completions", auth, (req, res) =>
+		chatController.handleChatCompletion(req, res),
+	);
 
 	// Model list endpoint
 	app.get("/v1/models", (req, res) => modelController.getModels(req, res));
