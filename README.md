@@ -71,6 +71,7 @@ Example:
 ```bash
 curl -X POST http://localhost:30011/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY"\
   -d '{
     "model": "anthropic/claude-4.5-sonnet",
     "messages": [{"role": "user", "content": "Who are you"}],
