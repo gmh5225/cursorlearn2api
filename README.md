@@ -53,6 +53,13 @@ npm start
 
 Server runs on port `30011` by default. Set `PORT` environment variable to change.
 
+**Optional: Enable API Key Authentication**
+```bash
+export API_KEY="your-secret-key"
+npm start
+```
+Then add header: `Authorization: Bearer your-secret-key`
+
 ## API Endpoints
 
 **Chat Completions**

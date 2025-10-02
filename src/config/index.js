@@ -8,6 +8,11 @@ module.exports = {
 		port: process.env.PORT || 30011,
 	},
 
+	// Authentication configuration
+	auth: {
+		apiKey: process.env.API_KEY || null, // Set API_KEY environment variable to enable authentication
+	},
+
 	// Browser configuration
 	browser: {
 		headless: true,
